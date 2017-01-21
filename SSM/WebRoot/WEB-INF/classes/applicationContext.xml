@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans 
+       					http://www.springframework.org/schema/beans/spring-beans.xsd
+       					http://www.springframework.org/schema/context 
+       					http://www.springframework.org/schema/context/spring-context.xsd
+       					http://www.springframework.org/schema/aop 
+       					http://www.springframework.org/schema/aop/spring-aop.xsd
+       					http://www.springframework.org/schema/tx 
+       					http://www.springframework.org/schema/tx/spring-tx.xsd ">				
+  
+  
+    <context:component-scan base-package="com.tjrac"></context:component-scan>
+  
+    <!-- 加载 配置文件 -->
+ 	<context:property-placeholder location="classpath:jdbc.properties"/>
+	
+	<!-- 1、 配置数据源 -->
+	<bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource">
+		<property name="driverClass" value="${driverClass}"></property>
+		<property name="jdbcUrl" value="${jdbcUrl}"></property>
+		<property name="user" value="${user}"></property>
+		<property name="password" value="${password}"></property>
+	</bean>
+    
+    
+    <!-- 2、配置myBatis -->
+    <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+    	<property name="dataSource" ref="dataSource"></property>
+   		<property name="configLocation" value="classpath:sqlMapConfig.xml"></property>
+    </bean>
+	
+	<!-- 配置myBatis的接口代理开发  1 、接口的类名和映射文件必须同名 且 必须在同一目录下 
+		 2、映射文件的namespace必须是接口的全限定名    3、接口的方法名和映射id一致 -->
+    <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+    	<property name="basePackage" value="com.tjrac.dao"></property>
+    	<property name="sqlSessionFactoryBeanName" value="sqlSessionFactory"></property>
+    </bean>
+    
+    
+    <!-- 3、事务 -->
+    <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+    	<property name="dataSource" ref="dataSource"></property>
+    </bean>
+    <!-- 配置通知 -->
+    <tx:advice id="txAdvice" transaction-manager="transactionManager">
+    	<tx:attributes>
+    		<tx:method name="save*" propagation="REQUIRED"/>
+    		<tx:method name="update*" propagation="REQUIRED"/>
+    		<tx:method name="delete*" propagation="REQUIRED"/>
+    		<tx:method name="find*" propagation="REQUIRED"/>
+    	</tx:attributes>
+    </tx:advice>
+    
+    <!-- 拦截service -->
+    <aop:config>
+    	<aop:advisor advice-ref="txAdvice" pointcut="execution(* com.tjrac.service.*.*(..))"/>
+    </aop:config>
+</beans>
